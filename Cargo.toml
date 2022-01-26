@@ -1,0 +1,19 @@
+[package]
+name = "faithful-servant-bot"
+version = "0.1.0"
+authors = ["A248"]
+edition = "2021"
+license = "GPL-3.0-or-later"
+
+[dependencies]
+eyre = "0.6.6"
+color-eyre = "0.6.0"
+serde = "1.0.136"
+ron = "0.7.0"
+log = "0.4.14"
+async-std = { version = "1.10.0", features = ["attributes"] }
+sqlx = { version = "0.5.10", features = ["runtime-async-std-rustls", "postgres", "decimal"] }
+irc = { version = "0.15.0", default-features = false, features = ["tls-rust"] }
+
+[dev-dependencies]
+tempfile = "3.3.0"
