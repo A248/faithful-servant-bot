@@ -12,8 +12,11 @@ serde = "1.0.136"
 ron = "0.7.0"
 log = "0.4.14"
 async-std = { version = "1.10.0", features = ["attributes"] }
+async-trait = "0.1.52"
+futures-lite = "1.12.0"
 sqlx = { version = "0.5.10", features = ["runtime-async-std-rustls", "postgres", "decimal"] }
 irc = { version = "0.15.0", default-features = false, features = ["tls-rust"] }
+serenity = { version = "0.10.10", default-features = false, features = ["rustls_backend", "cache", "client", "gateway", "model", "utils"] }
 
 [dev-dependencies]
 tempfile = "3.3.0"

@@ -20,11 +20,14 @@
 #![forbid(unsafe_code)]
 
 mod config;
-mod bot;
+mod irc;
+mod discord;
 
 use async_std::path::PathBuf;
+use async_std::task;
 use eyre::Result;
-use crate::bot::Bot;
+use crate::discord::DiscordBot;
+use crate::irc::IrcBot;
 
 fn main() -> core::result::Result<(), eyre::Report> {
     use std::env;
@@ -39,34 +42,28 @@ fn main() -> core::result::Result<(), eyre::Report> {
 
 async fn async_main() -> Result<()> {
     use crate::config::Config;
-    use irc::client;
 
-    let Config { postgres_url, irc_server, induction } = Config::load(
+    let Config { postgres_url, irc_server, discord_bot, induction } = Config::load(
         &PathBuf::from("config.ron")
     ).await?;
 
     let connection_pool = sqlx::postgres::PgPool::connect_lazy(&postgres_url)?;
     log::info!("Connected to database");
 
-    let irc_client = client::Client::from_config(client::data::Config {
-        owners: irc_server.bot_owners,
-        nickname: Some(irc_server.bot_username),
-        nick_password: Some(irc_server.bot_password),
-        server: Some(irc_server.host),
-        port: Some(irc_server.port),
-        use_tls: Some(true),
-        encoding: Some(String::from("UTF-8")),
-        channels: irc_server.bot_channels,
-        ..client::data::Config::default()
-    }).await?;
-    log::info!("Validated bot details. Connecting to IRC...");
-
-    let bot = Bot {
-        connection_pool,
-        irc_client,
-        induction
+    let irc_task = {
+        let connection_pool = connection_pool.clone();
+        task::spawn(async move {
+            let irc_bot = IrcBot::new(irc_server, connection_pool).await?;
+            irc_bot.start().await
+        })
     };
-    bot.start().await
+    let discord_task = {
+        let discord_bot = DiscordBot::new(discord_bot, connection_pool);
+        task::spawn(async move {
+            discord_bot.start().await
+        })
+    };
+    irc_task.await
 }
 
 #[cfg(test)]

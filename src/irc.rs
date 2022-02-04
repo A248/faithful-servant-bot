@@ -17,20 +17,41 @@
  * and navigate to version 3 of the GNU General Public License.
  */
 
-use irc::client::Client;
 use sqlx::postgres::PgPool;
-use crate::config::Induction;
+use crate::config::{Induction, IrcServer};
 use eyre::Result;
 
+type IrcClient = irc::client::Client;
+
 #[derive(Debug)]
-pub struct Bot {
-    pub connection_pool: PgPool,
-    pub irc_client: Client,
-    pub induction: Induction
+pub struct IrcBot {
+    irc_client: irc::client::Client,
+    connection_pool: PgPool
 }
 
-impl Bot {
+impl IrcBot {
+    pub async fn new(config: IrcServer,
+                     connection_pool: PgPool) -> Result<Self> {
+
+        let irc_client = IrcClient::from_config(irc::client::data::Config {
+            owners: config.bot_owners,
+            nickname: Some(config.bot_username),
+            nick_password: Some(config.bot_password),
+            server: Some(config.host),
+            port: Some(config.port),
+            use_tls: Some(true),
+            encoding: Some(String::from("UTF-8")),
+            channels: config.bot_channels,
+            ..irc::client::data::Config::default()
+        }).await?;
+        Ok(IrcBot {
+            connection_pool,
+            irc_client
+        })
+    }
+
     pub async fn start(self) -> Result<()> {
+        log::info!("Connecting to IRC...");
         self.irc_client.identify()?;
         log::info!("Connected to IRC");
 
