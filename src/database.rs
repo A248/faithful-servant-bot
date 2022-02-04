@@ -17,23 +17,18 @@
  * and navigate to version 3 of the GNU General Public License.
  */
 
-use irc::client::Client;
-use sqlx::postgres::PgPool;
-use crate::config::Induction;
-use eyre::Result;
+use sqlx::PgPool;
 
-#[derive(Debug)]
-pub struct Bot {
-    pub connection_pool: PgPool,
-    pub irc_client: Client,
-    pub induction: Induction
+/// Database access. Cloning this struct is cheap as it simply increments a reference counter
+#[derive(Clone, Debug)]
+pub struct Database {
+    connection_pool: PgPool,
 }
 
-impl Bot {
-    pub async fn start(self) -> Result<()> {
-        self.irc_client.identify()?;
-        log::info!("Connected to IRC");
-
-        Ok(())
+impl From<PgPool> for Database {
+    fn from(connection_pool: PgPool) -> Self {
+        Self {
+            connection_pool
+        }
     }
 }
