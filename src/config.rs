@@ -29,6 +29,7 @@ use serde::{Serialize, Deserialize};
 pub struct Config {
     pub postgres_url: String,
     pub irc_server: IrcServer,
+    pub discord_bot: DiscordBot,
     pub induction: Induction
 }
 
@@ -65,6 +66,7 @@ impl Default for Config {
         Self {
             postgres_url: String::from("postgres://user:password@host:port/database"),
             irc_server: IrcServer::default(),
+            discord_bot: DiscordBot::default(),
             induction: Induction::default()
         }
     }
@@ -78,6 +80,11 @@ pub struct IrcServer {
     pub bot_password: String,
     pub bot_owners: Vec<String>,
     pub bot_channels: Vec<String>
+}
+
+#[derive(Clone, Debug, Default, Hash, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DiscordBot {
+    pub bot_token: String,
 }
 
 #[derive(Clone, Debug, Default, Hash, PartialEq, Eq, Serialize, Deserialize)]
