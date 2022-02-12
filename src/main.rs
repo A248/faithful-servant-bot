@@ -23,6 +23,7 @@ mod config;
 mod irc;
 mod discord;
 mod database;
+mod brain;
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -56,7 +57,8 @@ async fn async_main() -> Result<()> {
     let database = Database::from(
         sqlx::postgres::PgPool::connect_lazy(&postgres_url)?
     );
-    log::info!("Connected to database");
+    database.create_schema().await?;
+    log::info!("Database is connected and ready");
 
     let shutdown_signal = Arc::new(ShutdownSignal::default());
 

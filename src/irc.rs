@@ -22,7 +22,7 @@ use eyre::Result;
 use futures::StreamExt;
 use irc::client::ClientStream;
 use irc::proto::{Command, Prefix};
-use crate::database::Database;
+use crate::database::{Database, UserIdentifier};
 use crate::ShutdownSignal;
 
 type IrcConfig = crate::config::IrcServer;
@@ -117,7 +117,10 @@ struct MessageHandle {
 
 impl MessageHandle {
     async fn handle(self) -> Result<()> {
-        Ok(())
+        self.database.record_message(
+            UserIdentifier::IrcNickname(&self.nickname),
+            crate::brain::count_words(self.content)
+        ).await
     }
 }
 

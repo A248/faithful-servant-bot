@@ -22,7 +22,8 @@ use serenity::client::{Context, EventHandler};
 use async_trait::async_trait;
 use eyre::Result;
 use serenity::model::channel::Message;
-use crate::database::Database;
+use serenity::model::id::UserId;
+use crate::database::{Database, UserIdentifier};
 use crate::ShutdownSignal;
 
 type DiscordClient = serenity::client::Client;
@@ -72,7 +73,14 @@ struct Handler {
 
 #[async_trait]
 impl EventHandler for Handler {
-    async fn message(&self, _ctx: Context, _new_message: Message) {
-        todo!()
+    async fn message(&self, _ctx: Context, new_message: Message) {
+
+        let UserId(discord_id) = new_message.author.id;
+        let word_count = crate::brain::count_words(new_message.content);
+
+        self.database.record_message(
+            UserIdentifier::DiscordId(discord_id),
+            word_count
+        ).await.expect("Failed to record message");
     }
 }

@@ -605,6 +605,7 @@ dependencies = [
  "futures",
  "irc",
  "log",
+ "once_cell",
  "ron",
  "serde",
  "serenity",
