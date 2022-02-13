@@ -22,17 +22,16 @@ use once_cell::sync::OnceCell;
 
 // All valid English words
 // This is a rough measure. It isn't exact and doesn't include many American spellings
-const ALL_WORDS_INDEX: OnceCell<HashSet<&'static str>> = OnceCell::new();
+static ALL_WORDS_INDEX: OnceCell<HashSet<&'static str>> = OnceCell::new();
 
 fn create_all_words_index() -> HashSet<&'static str> {
-    // http://www.mieliestronk.com/wordlist.html
-    let all_words: &'static str = include_str!("corncob_lowercase.txt");
+    // Words from http://www.mieliestronk.com/wordlist.html
+    let all_words = include_str!("corncob_lowercase.txt");
     all_words.split_terminator('\n').collect()
 }
 
 pub fn count_words<C: AsRef<str>>(content: C) -> u32 {
-    let all_words_index = ALL_WORDS_INDEX;
-    let all_words_index = all_words_index.get_or_init(create_all_words_index);
+    let all_words_index = ALL_WORDS_INDEX.get_or_init(create_all_words_index);
 
     let mut word_count = 0;
     let content = content.as_ref();
