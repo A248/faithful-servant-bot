@@ -17,6 +17,7 @@
  * and navigate to version 3 of the GNU General Public License.
  */
 
+use std::borrow::Cow;
 use std::collections::HashSet;
 use once_cell::sync::OnceCell;
 
@@ -27,7 +28,9 @@ static ALL_WORDS_INDEX: OnceCell<HashSet<&'static str>> = OnceCell::new();
 fn create_all_words_index() -> HashSet<&'static str> {
     // Words from http://www.mieliestronk.com/wordlist.html
     let all_words = include_str!("corncob_lowercase.txt");
-    all_words.split_terminator('\n').collect()
+    let mut all_words = all_words.split_terminator('\n').collect::<HashSet<_>>();
+    all_words.shrink_to_fit();
+    all_words
 }
 
 pub fn count_words<C: AsRef<str>>(content: C) -> u32 {
@@ -42,6 +45,11 @@ pub fn count_words<C: AsRef<str>>(content: C) -> u32 {
         }
     }
     word_count
+}
+
+pub fn respond_to_message<C: AsRef<str>>(_content: C) -> Option<Cow<'static, str>> {
+    // Todo: Add responses to direct address, inquiries, etc.
+    None
 }
 
 #[cfg(test)]

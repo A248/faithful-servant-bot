@@ -73,14 +73,24 @@ struct Handler {
 
 #[async_trait]
 impl EventHandler for Handler {
-    async fn message(&self, _ctx: Context, new_message: Message) {
+    async fn message(&self, ctx: Context, message: Message) {
+        if let Err(e) = self.handle_message(ctx, message).await {
+            log::error!("Failed to handle discord message: {}", e);
+        }
+    }
+}
 
-        let UserId(discord_id) = new_message.author.id;
-        let word_count = crate::brain::count_words(new_message.content);
+impl Handler {
+    async fn handle_message(&self, ctx: Context, message: Message) -> Result<()> {
+        if let Some(response) = crate::brain::respond_to_message(&message.content) {
+            message.reply(ctx, response).await?;
+        }
+        let UserId(discord_id) = message.author.id;
+        let content = message.content;
 
         self.database.record_message(
             UserIdentifier::DiscordId(discord_id),
-            word_count
-        ).await.expect("Failed to record message");
+            crate::brain::count_words(content)
+        ).await
     }
 }

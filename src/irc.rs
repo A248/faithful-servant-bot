@@ -59,13 +59,17 @@ impl IrcBot {
         log::info!("Connecting to IRC...");
         self.irc_client.identify()?;
 
-        let reception_future =  MessageReceiver {
-            message_stream:  self.irc_client.stream()?,
-            database: self.database
+        let message_stream = self.irc_client.stream()?;
+        let irc_client = Arc::new(self.irc_client);
+
+        let reception_future = MessageReceiver {
+            message_stream,
+            database: self.database,
+            irc_client: irc_client.clone()
         }.receive_messages();
         let shutdown_future = async move {
             shutdown_signal.await_shutdown().await;
-            self.irc_client.send_quit("Goodbye")
+            irc_client.send_quit("Goodbye")
         };
 
         let (r1, r2) = futures::future::join(reception_future, shutdown_future).await;
@@ -78,7 +82,8 @@ impl IrcBot {
 #[derive(Debug)]
 struct MessageReceiver {
     message_stream: ClientStream,
-    database: Database
+    database: Database,
+    irc_client: Arc<IrcClient>
 }
 
 impl MessageReceiver {
@@ -87,8 +92,19 @@ impl MessageReceiver {
         while let Some(irc_message) = self.message_stream.next().await.transpose()? {
 
             if let Some(Prefix::Nickname(nickname, _, _)) = irc_message.prefix {
+
+                // 1. Respond to the message
+                // 2. Record the message
+
                 let content = match irc_message.command {
-                    Command::PRIVMSG(_, content) => content,
+                    Command::PRIVMSG(target, content) => {
+                        // Respond only to PRIVMSG per the IRC protocol
+                        // NOTICE commands should not be responded to
+                        if let Some(response) = crate::brain::respond_to_message(&content) {
+                            self.irc_client.send(Command::NOTICE(target, response.into_owned()))?;
+                        }
+                        content
+                    },
                     Command::NOTICE(_, content) => content,
                     _ => continue
                 };
